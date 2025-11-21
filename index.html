@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>당신 집에서 잘 수 있나요? | Travel Vibe Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Fonts: Pretendard & Gaegu -->
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+            background-color: #fff;
+            /* Prevent pull-to-refresh on mobile */
+            overscroll-behavior: none; 
+        }
+        .handwriting {
+            font-family: 'Gaegu', cursive;
+        }
+        
+        /* Soft Gradient Animation */
+        @keyframes soft-gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .animate-gradient-bg {
+            background: linear-gradient(-45deg, #ffe4e6, #fae8ff, #e0f2fe, #dcfce7, #fef3c7);
+            background-size: 300% 300%;
+            animation: soft-gradient 20s ease infinite;
+        }
+
+        /* Animations */
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-slide-up {
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Ticket Perforation */
+        .ticket-dots {
+            background-image: radial-gradient(circle, transparent 6px, #fff 6px);
+            background-size: 20px 20px;
+            background-position: -10px -10px;
+        }
+
+        /* Custom Scrollbar */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Mobile Hover Fix - Sky-Pink Gradient Theme */
+        @media (hover: hover) {
+            .hover-action:hover {
+                /* sky-50 to pink-50 gradient */
+                background-image: linear-gradient(to right, #f0f9ff, #fdf4ff);
+                border-color: #7dd3fc; /* sky-300 */
+                transform: translateY(-2px);
+            }
+        }
+        .hover-action:active {
+            /* sky-100 to pink-100 gradient */
+            background-image: linear-gradient(to right, #e0f2fe, #fae8ff); 
+            border-color: #7dd3fc; /* sky-300 */
+            transform: scale(0.99);
+        }
+    </style>
+</head>
+<!-- Centering Fix: flex justify-center items-center ensures the card is centered on large screens -->
+<body class="h-[100dvh] w-full flex justify-center items-center relative text-slate-800 animate-gradient-bg overflow-hidden">
+    
+    <!-- Main Container 
+         Mobile: w-full h-full (Full Screen)
+         Web (sm): max-w-[420px] h-[85vh] (Centered Card Look)
+         Added sm:border-white/50 for better definition on web
+    -->
+    <div id="root" class="relative z-10 w-full max-w-[420px] h-full sm:h-[85vh] sm:max-h-[850px] sm:rounded-[32px] bg-white/50 backdrop-blur-xl overflow-hidden flex flex-col sm:border-[8px] sm:border-white/50 sm:shadow-2xl transition-all duration-300"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- Data (15 Questions) ---
+        const questions = [
+            {
+                id: 1,
+                question: "내일은 드디어 여행지로 떠나는 날! ✈️ 짐 싸는 내 모습은?",
+                options: [
+                    { text: "일주일 전부터 준비 완료! 이미 완벽하게 분류해 둠", traits: { J: 2 } },
+                    { text: "음... 여권이랑 지갑만 있으면 되는 거 아냐?", traits: { P: 2 } },
+                    { text: "가서 입을 옷이 제일 중요해! 혼자만의 패션쇼 개최", traits: { E: 1, S: 1 } },
+                    { text: "비행기에서 읽을 책, 일기장, 필름 카메라부터 챙김", traits: { I: 1, N: 1 } }
+                ]
+            },
+            {
+                id: 2,
+                question: "공항 도착! 😱 제작진이 스마트폰을 걷어간다고 한다면?",
+                options: [
+                    { text: "헐 말도 안 돼! 마지막까지 친구들에게 카톡 보냄", traits: { E: 2 } },
+                    { text: "오히려 좋아 나만의 시간에 집중할래", traits: { I: 2, N: 1 } },
+                    { text: "비상금이나 지도 같은 현실적인 문제부터 걱정됨", traits: { S: 2, J: 1 } },
+                    { text: "재미있겠다! 진짜 리얼 예능 찍는 기분인걸?", traits: { P: 1, E: 1 } }
+                ]
+            },
+            {
+                id: 3,
+                question: "숙소로 가는 길, 낡은 지도를 봐도 도무지 길을 모르겠다...",
+                options: [
+                    { text: "지나가는 현지인 붙잡고 바로 물어본다 Ola! Help!", traits: { E: 2 } },
+                    { text: "일단 직진해 봐! 길 잃는 것도 여행의 묘미지 🎵", traits: { P: 2, N: 1 } },
+                    { text: "침착하게 표지판과 태양의 위치(?)를 분석해 본다", traits: { T: 1, J: 1 } },
+                    { text: "조용히 뒤따라가며 풍경 사진을 찍는다 (누군가 찾겠지...)", traits: { I: 2 } }
+                ]
+            },
+            {
+                id: 4,
+                question: "드디어 8명이 다 모였다! 첫 저녁 식사 자리에서의 나는?",
+                options: [
+                    { text: "MC 모드 발동! 분위기 띄우고 질문 던지느라 바쁨", traits: { E: 2 } },
+                    { text: "옆 사람 챙겨 주고 리액션 열심히 하며 맞장구친다", traits: { F: 1, I: 1 } },
+                    { text: "맛있는 음식에 집중! 묵묵히 요리를 음미한다", traits: { S: 1, I: 1 } },
+                    { text: "사람들 관찰 중... '저 사람은 저런 성격이구나' 분석함", traits: { N: 1, T: 1 } }
+                ]
+            },
+            {
+                id: 5,
+                question: "옆 침대 동료가 잠이 안 온다며 말을 걸어온다. 나의 반응은?",
+                options: [
+                    { text: "피곤하지만... 무슨 고민 있어? 끝까지 얘기를 듣는다", traits: { F: 2 } },
+                    { text: "따뜻한 우유나 차를 가져다 준다", traits: { T: 1, J: 1 } },
+                    { text: "오, 안 그래도 심심했는데! 밤새 수다 떨다 잠듦", traits: { E: 1, P: 1 } },
+                    { text: "꿈 얘기나 인생 얘기 같은 깊은 주제로 대화가 흘러감", traits: { N: 2 } }
+                ]
+            },
+            {
+                id: 6,
+                question: "자유 시간! 여행지에서 가장 가보고 싶은 곳은?",
+                options: [
+                    { text: "사람들로 북적이는 시장이나 핫한 플레이스", traits: { E: 2 } },
+                    { text: "조용한 서점이나 아무도 없는 해변가 산책", traits: { I: 2 } },
+                    { text: "역사가 담긴 성당이나 박물관 도슨트 투어", traits: { T: 1, S: 1 } },
+                    { text: "예쁜 골목길 돌아다니며 영감 얻기", traits: { N: 1, F: 1 } }
+                ]
+            },
+            {
+                id: 7,
+                question: "팀원과 의견 충돌! 분위기가 싸해졌을 때 나는?",
+                options: [
+                    { text: "일단 내 의견을 논리적으로 딱딱 정리해서 말한다", traits: { T: 2 } },
+                    { text: "사이를 중재하며 분위기를 유머로 푼다", traits: { E: 1, F: 1 } },
+                    { text: "상처받을까 봐 말조심하며 상대 기분을 살핀다", traits: { F: 2 } },
+                    { text: "나중에 따로 불러서 조용히 대화로 푼다", traits: { I: 1 } }
+                ]
+            },
+            {
+                id: 8,
+                question: "멋진 풍경을 봤을 때 내 머릿속에 드는 생각은?",
+                options: [
+                    { text: "와, 미쳤다... 너무 예뻐... (감동의 눈물 찔끔 🥺)", traits: { F: 2 } },
+                    { text: "여기서 사진 찍으면 인스타 각이다 📸", traits: { S: 1, E: 1 } },
+                    { text: "저 건물은 17세기에 지어졌겠지? 구조가 신기하네", traits: { T: 2 } },
+                    { text: "과거의 사람들도 이 노을을 봤겠지?", traits: { N: 2 } }
+                ]
+            },
+            {
+                id: 9,
+                question: "내일 일정 짤 시간! 어떤 방식이 좋아?",
+                options: [
+                    { text: "10:00 기상, 11:00 브런치... 분 단위 계획표!", traits: { J: 2 } },
+                    { text: "일단 큰 틀만 정해 두자", traits: { P: 1 } },
+                    { text: "그날 날씨랑 기분 보고 정하면 안 돼?", traits: { P: 2 } },
+                    { text: "맛집, 교통편, 동선 효율성 체크가 최우선!", traits: { T: 1, J: 1 } }
+                ]
+            },
+            {
+                id: 10,
+                question: "여행 중 예상치 못한 비가 쏟아진다! ☔️",
+                options: [
+                    { text: "짜증 나... 옷 다 젖을 것 같은데? 우산 파는 곳 검색", traits: { S: 1, T: 1 } },
+                    { text: "비 오는 리스본도 운치 있다! 빗소리 감상 🎧", traits: { N: 1, F: 1 } },
+                    { text: "실내 일정으로 플랜 B 가동! 당황하지 않는다", traits: { J: 2 } },
+                    { text: "비 맞고 뛰어! 영화의 한 장면처럼 놀아 보자!", traits: { P: 1, E: 1 } }
+                ]
+            },
+            {
+                id: 11,
+                question: "마지막 날, '당신 집에서 잘 수 있나요?' 질문할 상대를 정해야 한다.",
+                options: [
+                    { text: "가장 마음이 통하고 정서적으로 의지했던 사람", traits: { F: 2 } },
+                    { text: "배울 점이 많고 대화가 지적으로 통했던 사람", traits: { T: 2 } },
+                    { text: "제일 재밌고 같이 있으면 시간 가는 줄 모르는 사람", traits: { E: 1, P: 1 } },
+                    { text: "묵묵히 챙겨줬던 고마운 사람", traits: { I: 1, S: 1 } }
+                ]
+            },
+            {
+                id: 12,
+                question: "버스 창밖으로 낯선 풍경이 스쳐 지나간다. 당신의 생각은?",
+                options: [
+                    { text: "저 간판 글씨체 특이하네. 저 사람들은 뭘 기다리는 거지?", traits: { S: 2 } },
+                    { text: "이 버스는 어디로 가는 걸까... 마치 영화 속 한 장면 같아", traits: { N: 2 } },
+                    { text: "다음 정거장은 어디지? 버스 노선 확인", traits: { S: 1, J: 1 } },
+                    { text: "이 도시에 얽힌 이야기가 있을 것만 같아...", traits: { N: 1, F: 1 } }
+                ]
+            },
+            {
+                id: 13,
+                question: "친구가 여행 기념품으로 뭘 살지 고민한다. 나의 조언은?",
+                options: [
+                    { text: "가격 대비 퀄리티는 이게 제일 낫네 이거 사", traits: { T: 2 } },
+                    { text: "이게 너랑 분위기가 제일 잘 어울려! 딱 네 거야", traits: { F: 2 } },
+                    { text: "한국 가서도 실용적으로 쓸 수 있는 걸로 사야지", traits: { T: 1, S: 1 } },
+                    { text: "이걸 보면 우리 여행했던 이 순간이 계속 생각날 것 같아", traits: { F: 1, N: 1 } }
+                ]
+            },
+            {
+                id: 14,
+                question: "여행지에서의 마지막 밤, 아쉬움을 달래는 방법은?",
+                options: [
+                    { text: "이대로 잠들 순 없어! 펍이나 라운지 가서 끝까지 놀자!", traits: { E: 2 } },
+                    { text: "숙소 테라스에서 야경을 보며 조용히 맥주 한 잔", traits: { I: 2 } },
+                    { text: "오늘 만난 사람들과 연락처 교환하고 인스타 맞팔!", traits: { E: 1, F: 1 } },
+                    { text: "찍은 사진들을 정리하며 일기장에 소감을 남긴다", traits: { I: 1, J: 1 } }
+                ]
+            },
+            {
+                id: 15,
+                question: "여행이 끝나고, 나에게 이 여행은 어떤 의미일까?",
+                options: [
+                    { text: "내 안의 새로운 모습을 발견한 성장 드라마", traits: { N: 2 } },
+                    { text: "좋은 사람들과 함께 만든 잊지 못할 추억", traits: { F: 2 } },
+                    { text: "맛있는 거 먹고 푹 쉬다 온 힐링 휴가", traits: { S: 2 } },
+                    { text: "낯선 곳에서의 생존기를 기록한 다큐멘터리", traits: { T: 1 } }
+                ]
+            }
+        ];
+
+        const resultTypes = {
+            'INFP': {
+                name: "정재현",
+                title: "비 내리는 창가의 낭만 고양이 🐱",
+                tags: ["#섬세함", "#분위기장인", "#반전매력", "#음악추천", "#사색즐김", "#감성충전", "#느긋함", "#배려왕"],
+                desc: "당신은 겉으로는 차분하고 조용해 보이지만, 그 내면에는 누구보다 깊고 거대한 우주를 품고 있는 사람입니다. 낯선 여행지에서 마주하는 찰나의 감정과 분위기를 소중히 여기며, 그것을 자신만의 방식으로 오롯이 흡수합니다. 말로 다 표현하지 않아도, 특유의 다정한 눈빛과 세심한 배려로 주변 사람들을 편안하게 만드는 능력이 있습니다.",
+                detail: "남들이 무심코 지나치는 골목길의 낡은 간판이나 빗소리에서 아름다움을 발견하는 타입입니다. 시끄러운 파티보다는 마음이 맞는 소수의 사람들과 나누는 깊은 대화를 선호하며, 때로는 혼자만의 시간을 통해 에너지를 충전하는 것이 필요합니다.",
+                partner: "마크",
+                color: "bg-sky-50 text-sky-900 border-sky-200",
+                btnColor: "bg-sky-400 hover:bg-sky-500",
+                pointColor: "text-sky-500",
+                img: "🍑",
+                bgImg: "https://file.notion.so/f/f/d7730641-4164-476a-8752-577644429a34/82904450-4655-4775-8629-23016825501c/8989dbd24565d7bcb7ca80786135e842.jpg?id=28077081-6715-4523-a05e-556768781014&table=block&spaceId=d7730641-4164-476a-8752-577644429a34&expirationTimestamp=1732471200000&signature=_76515107864407544615452001242504452501452314823522315247663146563004536131215516"
+            },
+            'ENFP': {
+                name: "마크",
+                title: "세상 무해한 인간 비타민 🍋",
+                tags: ["#호기심천국", "#리액션부자", "#솔직함", "#사랑둥이", "#긍정에너지", "#무해함", "#엉뚱함", "#분위기메이커"],
+                desc: "존재 자체만으로도 주변을 환하게 밝히는 형광등 같은 사람! 새로운 세상에 대한 호기심이 가득하고, 매 순간 감정을 숨기지 못해 얼굴에 그대로 드러나는 투명하고 순수한 영혼의 소유자입니다. 서툴러도 매사에 진심인 당신의 모습은 사람들의 마음을 무장해제 시킵니다.",
+                detail: "길을 잃거나 실수를 해도 \"이것도 다 추억이지!\"라며 긍정적으로 웃어넘기는 회복탄력성을 가졌습니다. 편견 없이 사람들에게 다가가는 당신은 어디서나 환영받는 최고의 여행 메이트입니다. 즉흥적인 상황을 즐기며, 우연히 마주친 인연을 소중히 여깁니다.",
+                partner: "정재현",
+                color: "bg-green-50 text-green-900 border-green-200",
+                btnColor: "bg-green-400 hover:bg-green-500",
+                pointColor: "text-green-500",
+                img: "🐯"
+            },
+            'ISFJ': {
+                name: "채지원",
+                title: "폭신폭신 다정한 안식처 ☁️",
+                tags: ["#경청왕", "#내유외강", "#챙김러", "#따뜻함", "#안정감", "#세심함", "#평화주의자", "#헌신"],
+                desc: "부드러워 보이지만 속은 누구보다 단단한 외유내강형입니다. 소란스러운 상황에서도 중심을 잃지 않고 차분함을 유지하며, 뒤에서 묵묵히 동료들을 챙겨주는 팀의 숨은 수호천사입니다. 타인의 감정을 예민하게 캐치하고 배려하는 당신 덕분에 여행은 언제나 평화롭습니다.",
+                detail: "오래된 물건이나 익숙한 인연을 소중히 여깁니다. 나서서 주도하기보다는 한 발자국 뒤에서 따뜻한 미소로 이야기를 들어주는 역할을 자처합니다. 꼼꼼하게 주변을 살피며 모두가 편안한지 확인하는 세심함을 가지고 있습니다.",
+                partner: "최재경",
+                color: "bg-yellow-50 text-yellow-900 border-yellow-200",
+                btnColor: "bg-yellow-400 hover:bg-yellow-500",
+                pointColor: "text-yellow-500",
+                img: "✒️"
+            },
+            'ESTJ': {
+                name: "최재경",
+                title: "믿고 따르는 든든한 대장님 🛡️",
+                tags: ["#책임감", "#현실적", "#해결사", "#어른미", "#리더십", "#계획적", "#솔선수범", "#츤데레"],
+                desc: "어떤 돌발 상황이 와도 당황하지 않고 침착하게 문제를 해결하는 리더 스타일입니다. 효율적인 동선과 철저한 계획으로 팀을 이끄는 든든한 버팀목이죠. 겉으로는 무뚝뚝해 보일 수 있지만, 사실은 그 누구보다 팀원들에 대한 깊은 책임감과 애정을 가지고 있습니다.",
+                detail: "힘든 일은 남에게 미루지 않고 가장 먼저 나서서 처리하는 솔선수범형입니다. 감정적인 위로보다는 실질적인 해결책을 제시하는 편이지만, 행동 하나하나에 묻어나는 묵직한 배려가 매력 포인트입니다. 믿고 의지할 수 있는 어른스러운 여행자입니다.",
+                partner: "채지원",
+                color: "bg-blue-50 text-blue-900 border-blue-200",
+                btnColor: "bg-blue-400 hover:bg-blue-500",
+                pointColor: "text-blue-500",
+                img: "💼"
+            },
+            'ESFJ': {
+                name: "니코",
+                title: "준비성 철저한 귀염둥이 🐥",
+                tags: ["#친화력갑", "#보부상", "#메모광", "#해피바이러스", "#인기쟁이", "#공감왕", "#열정만수르", "#사랑둥이"],
+                desc: "여행을 위해 철저하게 공부하고 준비해오는 열정파입니다. 하지만 계획대로 되지 않아도 사람들과 어울리는 것 자체를 즐기는 유연함과 밝은 에너지를 가졌습니다. 처음 보는 사람과도 금방 언니 동생 하며 친해지는 미친 친화력의 소유자로, 어디서나 사랑받는 막내 역할을 톡톡히 합니다.",
+                detail: "사소한 감정과 풍경 하나하나를 놓치지 않고 기록하며 감탄합니다. 당신의 해맑은 웃음과 리액션은 지친 여행길에 비타민 같은 활력을 불어넣습니다. 주변 사람들을 살뜰히 챙기며 조화로운 분위기를 만드는 데 일등공신입니다.",
+                partner: "심은재",
+                color: "bg-pink-50 text-pink-900 border-pink-200",
+                btnColor: "bg-pink-400 hover:bg-pink-500",
+                pointColor: "text-pink-500",
+                img: "🍭"
+            },
+            'ESTP': {
+                name: "심은재",
+                title: "어디로 튈지 모르는 분위기 메이커 🔥",
+                tags: ["#입담꾼", "#순발력", "#자유영혼", "#팩폭러", "#인싸", "#모험가", "#유쾌함", "#해결사"],
+                desc: "어색한 침묵은 절대 못 참는 유쾌한 분위기 메이커! 특유의 재치 있는 입담과 순발력으로 어떤 상황에서도 웃음을 만들어내는 인싸 중의 인싸입니다. 복잡하고 골치 아픈 건 딱 질색, 지금 이 순간을 가장 즐겁고 짜릿하게 보내는 것을 추구하는 쿨한 여행자입니다.",
+                detail: "눈치가 빨라서 상황 파악이 누구보다 빠릅니다. 장난기 넘쳐 보이지만 결정적인 위기 상황에서는 시원시원하게 해결책을 내놓는 대담함도 갖췄습니다. 형식에 얽매이지 않는 자유로운 여행 스타일로, 당신과 함께라면 지루할 틈이 없습니다.",
+                partner: "한연덕",
+                color: "bg-orange-50 text-orange-900 border-orange-200",
+                btnColor: "bg-orange-400 hover:bg-orange-500",
+                pointColor: "text-orange-500",
+                img: "🕶️"
+            },
+            'INTP': {
+                name: "한연덕",
+                title: "무심한 척 다 챙기는 츤데레 😎",
+                tags: ["#마이웨이", "#취향확실", "#시니컬", "#반전매력", "#통찰력", "#효율주의", "#솔직함", "#관찰자"],
+                desc: "매사에 투덜대는 듯 보이지만, 은근히 챙길 건 다 챙기는 츤데레 스타일입니다. 남들의 시선이나 유행보다는 자신의 확고한 취향과 효율성을 1순위로 둡니다. 남들이 보지 못하는 독특한 시각으로 세상을 바라보며, 무심코 던지는 한마디가 핵심을 찌르는 통찰력을 가졌습니다.",
+                detail: "번거롭고 귀찮은 건 딱 질색이지만, 자신이 관심 있는 분야에는 놀라운 집중력과 열정을 보여줍니다. 감정적인 교류보다는 지적인 대화나 독특한 경험을 선호합니다. 겉바속촉 같은 매력으로 알면 알수록 진국인 사람입니다.",
+                partner: "류선우",
+                color: "bg-stone-50 text-stone-900 border-stone-200",
+                btnColor: "bg-stone-500 hover:bg-stone-600",
+                pointColor: "text-stone-600",
+                img: "🎬"
+            },
+            'INTJ': {
+                name: "류선우",
+                title: "본질을 꿰뚫는 사색가 👓",
+                tags: ["#지적호기심", "#관찰자", "#철학적", "#깊은내면", "#전략가", "#완벽주의", "#진지함", "#탐구자"],
+                desc: "여행지의 화려한 풍경 이면에 숨겨진 역사와 의미를 탐구하는 지적인 여행자입니다. 왁자지껄한 관광지보다는 깊이 있는 대화를 나누거나 혼자 사색할 수 있는 고즈넉한 장소를 선호합니다. 감정에 쉽게 휩쓸리기보다는 이성적으로 상황을 분석하고 판단하는 냉철함을 지녔습니다.",
+                detail: "모든 경험에서 배움을 찾으려 하며, 끊임없이 질문을 던집니다. 차가워 보일 수 있지만, 한번 마음을 연 상대에게는 누구보다 깊고 진솔한 관계를 맺습니다. 여행을 통해 단순한 즐거움보다는 내면의 성장을 추구하는 타입입니다.",
+                partner: "심은재",
+                color: "bg-violet-50 text-violet-900 border-violet-200",
+                btnColor: "bg-violet-400 hover:bg-violet-500",
+                pointColor: "text-violet-500",
+                img: "📓"
+            }
+        };
+
+        function getResultType(scores) {
+            const I_E = scores.E > scores.I ? 'E' : 'I';
+            const N_S = scores.N > scores.S ? 'N' : 'S';
+            const T_F = scores.F > scores.T ? 'F' : 'T';
+            const J_P = scores.P > scores.J ? 'P' : 'J';
+            
+            let type = I_E + N_S + T_F + J_P;
+            
+            const mapping = {
+                'INFP': 'INFP', 'ISFP': 'INFP',
+                'ENFP': 'ENFP', 'ESFP': 'ENFP',
+                'INFJ': 'ISFJ', 'ISFJ': 'ISFJ',
+                'ESTJ': 'ESTJ', 'ENTJ': 'ESTJ',
+                'ESFJ': 'ESFJ', 'ENFJ': 'ESFJ',
+                'ESTP': 'ESTP', 'ENTP': 'ESTP',
+                'ISTP': 'INTP', 'INTP': 'INTP',
+                'INTJ': 'INTJ', 'ISTJ': 'INTJ'
+            };
+            
+            return mapping[type] || 'INFP';
+        }
+
+        // --- Components ---
+
+        function Intro({ onStart }) {
+            return (
+                <div className="w-full h-full flex flex-col relative overflow-hidden">
+                    {/* Modified to allow scrolling on Intro page for natural feel */}
+                    <div className="flex-1 flex flex-col items-center overflow-y-auto no-scrollbar px-6 pt-10 pb-10">
+                        {/* Ticket Container - Taller */}
+                        <div className="w-full max-w-[340px] min-h-[520px] bg-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] overflow-hidden transform transition-all hover:scale-[1.01] duration-300 animate-slide-up border border-white/60 flex flex-col shrink-0">
+                            
+                            {/* Ticket Header - Light Sky Blue Pastel */}
+                            <div className="bg-sky-200 p-5 flex justify-between items-center text-sky-800">
+                                <span className="font-bold tracking-widest text-xs flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-teal-300 animate-pulse"></span>
+                                    BOARDING PASS
+                                </span>
+                                <span className="text-lg rotate-90">✈️</span>
+                            </div>
+                            
+                            {/* Ticket Body - Centered & Spacious */}
+                            <div className="flex-1 p-8 flex flex-col items-center text-center relative">
+                                {/* Left Cutout */}
+                                <div className="absolute top-0 left-0 -translate-x-1/2 -translate-y-1/2 w-6 h-6 bg-slate-50/50 rounded-full shadow-inner"></div>
+                                {/* Right Cutout */}
+                                <div className="absolute top-0 right-0 translate-x-1/2 -translate-y-1/2 w-6 h-6 bg-slate-50/50 rounded-full shadow-inner"></div>
+
+                                <div className="mb-4">
+                                    <span className="inline-block px-3 py-1 bg-sky-50 text-sky-600 rounded-full text-[10px] font-bold tracking-wider mb-2 border border-sky-100">
+                                        tvM NEW REALITY
+                                    </span>
+                                </div>
+                                <h1 className="text-3xl font-black text-slate-800 mb-1 leading-tight">
+                                    당신 집에서<br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-300 to-pink-300">잘 수 있나요?</span>
+                                </h1>
+                                
+                                {/* Dashed Line */}
+                                <div className="w-full border-b-2 border-dashed border-sky-100 my-8 relative"></div>
+                                
+                                <div className="flex justify-between w-full text-left mb-10 px-1">
+                                    <div>
+                                        <p className="text-[10px] text-gray-400 font-bold tracking-wider mb-1">FROM</p>
+                                        <p className="text-2xl font-black text-slate-700">HOME</p>
+                                    </div>
+                                    <div className="flex flex-col items-center justify-center px-2">
+                                        <span className="text-gray-300 text-lg leading-none rotate-90 sm:rotate-0">✈</span>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[10px] text-gray-400 font-bold tracking-wider mb-1">TO</p>
+                                        <p className="text-2xl font-black text-sky-500">YOU</p>
+                                    </div>
+                                </div>
+
+                                <p className="text-gray-500 text-sm font-medium mb-8 break-keep leading-relaxed mt-auto">
+                                    낯선 도시, 낯선 여정...<br/>
+                                    8명의 여행자 중<br/>
+                                    <b>나와 찰떡인 캐릭터</b>는 누구?
+                                </p>
+
+                                <button 
+                                    onClick={onStart}
+                                    className="w-full py-4 bg-sky-200 text-sky-800 rounded-2xl text-base font-bold hover:bg-sky-300 transition-all shadow-lg hover:shadow-sky-100 flex items-center justify-center gap-2 group"
+                                >
+                                    탑승하기
+                                </button>
+                            </div>
+                        </div>
+                        
+                        {/* Footer - No Emoji */}
+                        <p className="text-xs text-slate-500 mt-6 font-medium bg-white/40 px-4 py-1.5 rounded-full backdrop-blur-sm border border-white/30 animate-slide-up shrink-0" style={{animationDelay: '0.1s'}}>
+                            8명의 여행자가 기다리고 있어요!
+                        </p>
+
+                        {/* New Episode Link */}
+                        <a
+                            href="https://posty.pe/h8qb64"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-slate-400 mt-3 hover:text-sky-500 transition-colors underline decoration-slate-300 hover:decoration-sky-300 underline-offset-2 animate-slide-up shrink-0 mb-4"
+                            style={{animationDelay: '0.2s'}}
+                        >
+                            최신 에피소드 확인하기 ↗
+                        </a>
+                    </div>
+                </div>
+            );
+        }
+
+        function Question({ data, current, total, onAnswer, onBack }) {
+            const [selected, setSelected] = useState(null);
+            const scrollRef = useRef(null);
+
+            // Scroll to top whenever the question (current index) changes
+            useEffect(() => {
+                if (scrollRef.current) {
+                    scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            }, [current]);
+
+            const handleClick = (idx, traits) => {
+                setSelected(idx);
+                setTimeout(() => {
+                    onAnswer(traits);
+                    setSelected(null);
+                }, 250);
+            };
+
+            return (
+                <div className="w-full h-full flex flex-col bg-white/60 relative">
+                    {/* Header */}
+                    <div className="px-8 pt-10 pb-6 relative shrink-0">
+                        <div className="flex justify-between items-center mb-3">
+                            {/* Back Button */}
+                            <button 
+                                onClick={onBack}
+                                className="p-2 -ml-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+                                aria-label="Go back"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                            </button>
+
+                            <div className="text-slate-400 font-bold text-xs bg-white px-2.5 py-1 rounded-lg border border-slate-100 shadow-sm">
+                                {current} / {total}
+                            </div>
+                        </div>
+                        
+                        {/* Simple Progress Bar */}
+                        <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                            <div 
+                                className="bg-sky-300 h-full rounded-full transition-all duration-500 ease-out" 
+                                style={{ width: `${(current / total) * 100}%` }}
+                            ></div>
+                        </div>
+                    </div>
+
+                    {/* Question Content - Added ref for scroll reset */}
+                    <div ref={scrollRef} className="flex-1 px-8 flex flex-col pb-16 overflow-y-auto no-scrollbar">
+                        
+                        {/* Question Title Area */}
+                        <div className="flex flex-col mb-8 animate-slide-up opacity-0 mt-4" style={{animationDelay: '0.1s'}}>
+                            <div className="flex items-baseline gap-5 mb-6">
+                                <span className="text-sky-400 font-extrabold text-3xl italic tracking-tight whitespace-nowrap">Q{data.id}.</span>
+                                <h2 className="text-[22px] font-bold text-slate-800 leading-snug break-keep">
+                                    {data.question}
+                                </h2>
+                            </div>
+                            
+                            {/* Divider */}
+                            <div className="w-full border-b-2 border-dashed border-slate-200"></div>
+                        </div>
+
+                        <div className="space-y-3.5 pb-10">
+                            {data.options.map((opt, idx) => (
+                                <button
+                                    key={`${data.id}-${idx}`}
+                                    onClick={() => handleClick(idx, opt.traits)}
+                                    className={`w-full text-left p-5 rounded-[20px] border transition-all duration-200 text-[15px] font-medium leading-relaxed animate-slide-up opacity-0 shadow-sm group hover-action
+                                    ${selected === idx 
+                                        ? 'bg-gradient-to-r from-sky-50 to-pink-50 border-sky-300 text-slate-700 ring-1 ring-sky-300 scale-[0.99]' 
+                                        : 'bg-white border-slate-100 text-slate-600'}
+                                    `}
+                                    style={{ animationDelay: `${0.2 + (idx * 0.1)}s` }}
+                                >
+                                    {opt.text}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function Loading() {
+            return (
+                <div className="w-full h-full flex flex-col justify-center items-center relative overflow-hidden bg-white/80">
+                    <div className="mb-8 relative">
+                        <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center animate-bounce border border-sky-200 shadow-lg">
+                            <span className="text-5xl">🥨</span>
+                        </div>
+                    </div>
+                    <h2 className="text-xl font-bold text-slate-800 mb-2">여행 성향 분석 중...</h2>
+                    <p className="text-slate-500 text-sm font-medium">당신의 여행 스타일을 찾고 있어요!</p>
+                </div>
+            );
+        }
+
+        function Result({ scores, onRetry }) {
+            const resultKey = getResultType(scores);
+            const data = resultTypes[resultKey];
+
+            // Add background image style if it exists
+            const bgStyle = data.bgImg ? {
+                backgroundImage: `url(${data.bgImg})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+            } : {};
+
+            // 링크 복사 기능
+            const handleShare = () => {
+                const dummy = document.createElement("input");
+                document.body.appendChild(dummy);
+                dummy.value = window.location.href;
+                dummy.select();
+                document.execCommand("copy");
+                document.body.removeChild(dummy);
+                alert("링크가 복사되었습니다! 🍀\n재맠러에게 공유해서 환상의 짝꿍을 찾아 보세요!");
+            };
+
+            return (
+                <div className={`w-full h-full flex flex-col relative overflow-hidden`}>
+                    {/* Background Image Layer (for opacity) */}
+                    {data.bgImg && (
+                        <div 
+                            className="absolute inset-0 z-0 opacity-30" 
+                            style={bgStyle}
+                        ></div>
+                    )}
+                    
+                    {/* Content Layer */}
+                    <div className={`relative z-10 w-full h-full flex flex-col ${data.color} bg-opacity-50`}>
+                        <div className="flex-1 overflow-y-auto no-scrollbar p-6 pb-28">
+                            {/* Polaroid Card Style - Added backdrop-blur for better readability over image */}
+                            <div className="bg-white/80 backdrop-blur-md rounded-[24px] p-6 shadow-sm border border-white/60 animate-slide-up opacity-0 mt-4" style={{animationDelay: '0.1s'}}>
+                                
+                                {/* Character Title */}
+                                <div className="text-center mb-8 pt-2">
+                                    <div className="inline-block relative">
+                                        <div className="text-7xl mb-4">{data.img}</div>
+                                        {/* Tape decoration */}
+                                        <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 w-16 h-6 bg-white/40 rotate-[-2deg] border border-white/20 shadow-sm"></div>
+                                    </div>
+                                    
+                                    <div className={`font-bold ${data.pointColor} mb-2 text-xs tracking-widest uppercase`}>My Travel Persona</div>
+                                    <h1 className="text-2xl font-extrabold text-slate-800 mb-3 break-keep leading-tight">
+                                        {data.name}
+                                    </h1>
+                                    <p className="text-slate-500 text-sm font-medium">{data.title}</p>
+                                </div>
+
+                                {/* Tags */}
+                                <div className="flex flex-wrap justify-center gap-2 mb-8">
+                                    {data.tags.map((tag, i) => (
+                                        <span key={i} className="px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold text-slate-500">
+                                            {tag}
+                                        </span>
+                                    ))}
+                                </div>
+
+                                {/* Description */}
+                                <div className="space-y-6 mb-2">
+                                    <div>
+                                        <h3 className="font-bold text-slate-800 mb-2 text-sm flex items-center gap-2">
+                                            <span className="text-base">👀</span> 성격 분석
+                                        </h3>
+                                        <p className="text-slate-600 text-sm leading-relaxed text-left break-keep font-normal border-l-2 border-slate-200 pl-3">
+                                            {data.desc}
+                                        </p>
+                                    </div>
+                                    
+                                    <div>
+                                        <h3 className="font-bold text-slate-800 mb-2 text-sm flex items-center gap-2">
+                                            <span className="text-base">🎒</span> 여행 스타일
+                                        </h3>
+                                        <p className="text-slate-600 text-sm leading-relaxed text-left break-keep font-normal border-l-2 border-slate-200 pl-3">
+                                            {data.detail}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Partner Card - Added backdrop-blur */}
+                            <div className="mt-4 bg-white/60 backdrop-blur-sm rounded-[20px] p-5 flex items-center justify-between border border-white/40 shadow-sm animate-slide-up opacity-0" style={{animationDelay: '0.3s'}}>
+                                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Best Partner</span>
+                                <span className="text-sm font-extrabold text-slate-800 flex items-center gap-1.5">
+                                    {data.partner} <span className="text-red-400 text-xs">♥</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Fixed Buttons Area */}
+                        <div className="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-white via-white/90 to-transparent pt-12 flex gap-3">
+                            <button 
+                                onClick={onRetry}
+                                className="flex-1 py-4 bg-white border border-slate-200 text-slate-600 rounded-2xl text-sm font-bold hover:bg-slate-50 transition-colors shadow-sm"
+                            >
+                                다시 하기
+                            </button>
+                            <button 
+                                className={`flex-1 py-4 text-white rounded-2xl text-sm font-bold hover:opacity-90 transition-all shadow-md flex justify-center items-center gap-2 ${data.btnColor}`}
+                                onClick={handleShare}
+                            >
+                                공유하기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // --- Main App ---
+
+        function App() {
+            const [step, setStep] = useState('intro');
+            const [currentQIndex, setCurrentQIndex] = useState(0);
+            const [scores, setScores] = useState({ E:0, I:0, N:0, S:0, T:0, F:0, P:0, J:0 });
+            const [history, setHistory] = useState([]);
+
+            const startTest = () => {
+                setStep('test');
+                setCurrentQIndex(0);
+                setScores({ E:0, I:0, N:0, S:0, T:0, F:0, P:0, J:0 });
+                setHistory([]);
+            };
+
+            const handleAnswer = (traits) => {
+                const newScores = { ...scores };
+                for (const [key, val] of Object.entries(traits)) {
+                    newScores[key] += val;
+                }
+                setScores(newScores);
+                setHistory([...history, traits]);
+
+                if (currentQIndex < questions.length - 1) {
+                    setCurrentQIndex(prev => prev + 1);
+                } else {
+                    setStep('loading');
+                    setTimeout(() => setStep('result'), 2000);
+                }
+            };
+
+            const handleBack = () => {
+                if (currentQIndex === 0) {
+                    setStep('intro');
+                    setScores({ E:0, I:0, N:0, S:0, T:0, F:0, P:0, J:0 });
+                    setHistory([]);
+                    return;
+                }
+
+                const lastTraits = history[history.length - 1];
+                const newScores = { ...scores };
+                for (const [key, val] of Object.entries(lastTraits)) {
+                    newScores[key] -= val;
+                }
+                setScores(newScores);
+                setHistory(prev => prev.slice(0, -1));
+                setCurrentQIndex(prev => prev - 1);
+            };
+
+            // New function to go back to Intro (Home)
+            const goHome = () => {
+                setStep('intro');
+                setCurrentQIndex(0);
+                setScores({ E:0, I:0, N:0, S:0, T:0, F:0, P:0, J:0 });
+                setHistory([]);
+            };
+
+            return (
+                <>
+                    {step === 'intro' && <Intro onStart={startTest} />}
+                    {step === 'test' && (
+                        <Question 
+                            data={questions[currentQIndex]} 
+                            current={currentQIndex + 1} 
+                            total={questions.length}
+                            onAnswer={handleAnswer}
+                            onBack={handleBack}
+                        />
+                    )}
+                    {step === 'loading' && <Loading />}
+                    {/* Pass goHome instead of startTest */}
+                    {step === 'result' && <Result scores={scores} onRetry={goHome} />}
+                </>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
